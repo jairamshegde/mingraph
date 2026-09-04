@@ -1,19 +1,38 @@
 from anthropic import Anthropic
+from ollama import Client as OllamaClient
 from openai import OpenAI
 
 from mingraph.llm import BaseLLM
 
 
 class OpenAILLM(BaseLLM):
-    """OpenAI adapter for BaseLLM, backed by the Responses API."""
+    """OpenAI adapter for BaseLLM, backed by the Chat Completions API."""
 
     def __init__(self, model: str, api_key: str | None = None):
         self._client = OpenAI(api_key=api_key)
         self._model = model
 
     def generate(self, prompt: str) -> str:
-        response = self._client.responses.create(model=self._model, input=prompt)
-        return response.output_text
+        response = self._client.chat.completions.create(
+            model=self._model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.choices[0].message.content
+
+
+class OllamaLLM(BaseLLM):
+    """Local-model adapter for BaseLLM, backed by a running Ollama server."""
+
+    def __init__(self, model: str, host: str = "http://localhost:11434"):
+        self._client = OllamaClient(host=host)
+        self._model = model
+
+    def generate(self, prompt: str) -> str:
+        response = self._client.chat(
+            model=self._model,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.message.content
 
 
 class AnthropicLLM(BaseLLM):
