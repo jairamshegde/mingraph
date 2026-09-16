@@ -1,9 +1,139 @@
 # mingraph
 
-A from-scratch, phase-by-phase reimplementation of core LangChain/LangGraph
-building blocks, used as a vehicle for learning object-oriented design and
-design patterns in Python.
+LangChain and LangGraph building blocks, rebuilt from scratch to learn
+object-oriented design and design patterns in Python.
 
-Each phase lives on its own branch (`phase-1`, `phase-2`, ...) and merges
-into `main` once complete, so `main` always reflects the latest finished
-phase.
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+## Inspiration
+
+> *What I cannot create, I do not understand.* (Richard Feynman)
+
+mingraph follows the idea behind
+[build-your-own-x](https://github.com/codecrafters-io/build-your-own-x): the
+best way to understand a technology is to rebuild it from scratch. Here the
+goal is object-oriented design. Instead of studying patterns in isolation,
+each one is learned by rebuilding a LangChain/LangGraph piece that actually
+needs it, so every concept comes with a real problem it solves.
+
+## About
+
+mingraph is a learning project, not a library. Each phase takes one piece of
+the LangChain/LangGraph stack (provider wrappers, messages, tools, memory,
+chains, retrievers, the agent loop), rebuilds a minimal version of it, and uses
+it to practise one object-oriented idea or design pattern. The roadmap ends
+with a capstone: a tiny multi-agent graph orchestrator.
+
+Design choices are checked against the official LangChain, LangGraph and
+provider documentation. The reasoning behind each phase, including what went
+wrong, is written up in the blog series below.
+
+**What it isn't:** a replacement for LangChain or LangGraph, or
+production-ready code. The goal is to understand why those frameworks are
+shaped the way they are.
+
+## Learning series
+
+### LangGraph from Scratch: Design Patterns in Python
+
+One post per phase on
+[The Architect's Mind](https://thearchitectsmind.hashnode.dev/), covering what
+was built, the design decisions behind it, and what went wrong along the way.
+
+| # | Phase | OOP concept / pattern | Code | Blog post | Status |
+|---|-------|-----------------------|------|-----------|--------|
+| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | Coming soon | Done |
+| 2 | Messages & prompts | Encapsulation, composition, dataclasses | `phase-2` | Coming soon | In progress |
+| 3 | Tools & function calling | Strategy pattern, tool registry | — | Coming soon | Planned |
+| 4 | Memory | Polymorphism, Template Method | — | Coming soon | Planned |
+| 5 | Chains | Composite, operator overloading (`\|` pipe) | — | Coming soon | Planned |
+| 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | Planned |
+| 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | Planned |
+| ★ | Capstone | A mini multi-agent graph orchestrator | — | Coming soon | Planned |
+
+## Project structure
+
+```
+mingraph/
+├── mingraph/
+│   ├── __init__.py
+│   ├── llm.py          # BaseLLM: the provider contract callers depend on
+│   └── providers.py    # OpenAI, Anthropic and Ollama adapters
+├── requirements.txt    # pinned provider SDKs
+├── LICENSE
+└── README.md
+```
+
+## Getting started
+
+### Prerequisites
+
+- Python 3.10 or newer (developed on 3.12)
+- An OpenAI and/or Anthropic API key, for the hosted providers
+- [Ollama](https://ollama.com/download) running locally, for the local provider
+
+### Installation
+
+```bash
+git clone https://github.com/jairamshegde/mingraph.git
+cd mingraph
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+The project isn't packaged yet, so run code from the repository root so that
+`import mingraph` resolves.
+
+### Configuration
+
+The OpenAI and Anthropic SDKs read their keys from the environment:
+
+```bash
+export OPENAI_API_KEY="..."
+export ANTHROPIC_API_KEY="..."
+```
+
+You can also pass `api_key=` to the provider's constructor. Ollama needs no
+key: `OllamaLLM` connects to `http://localhost:11434` unless you pass `host=`.
+Pull a model before first use:
+
+```bash
+ollama pull qwen3.5
+```
+
+Any chat model from the [Ollama library](https://ollama.com/library) works,
+for example `qwen3` or a Gemma model such as `gemma3` or `gemma4`.
+
+## Usage
+
+Calling code depends only on `BaseLLM`, so switching providers is a one-line
+change:
+
+```python
+from mingraph.llm import BaseLLM
+from mingraph.providers import AnthropicLLM, OllamaLLM, OpenAILLM
+
+
+def summarize(llm: BaseLLM, text: str) -> str:
+    return llm.generate(f"Summarize in one sentence:\n\n{text}")
+
+
+llm = OllamaLLM("qwen3.5")  # or OpenAILLM("gpt-5-mini"), AnthropicLLM("claude-sonnet-5")
+print(summarize(llm, "mingraph rebuilds LangGraph building blocks from scratch."))
+```
+
+## References
+
+- [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
+- [LangGraph documentation](https://docs.langchain.com/oss/python/langgraph/overview)
+- [Python `abc` module](https://docs.python.org/3/library/abc.html)
+- [Refactoring.Guru: design patterns](https://refactoring.guru/design-patterns)
+- Provider SDKs: [openai-python](https://github.com/openai/openai-python),
+  [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python),
+  [ollama-python](https://github.com/ollama/ollama-python)
+
+## License
+
+Released under the [MIT License](LICENSE).
