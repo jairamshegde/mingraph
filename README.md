@@ -44,8 +44,8 @@ was built, the design decisions behind it, and what went wrong along the way.
 | # | Phase | OOP concept / pattern | Code | Blog post | Status |
 |---|-------|-----------------------|------|-----------|--------|
 | 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and Polymorphism Never Clicked for Me Until I Wrapped Three LLM APIs](https://thearchitectsmind.hashnode.dev/abstraction-and-polymorphism-never-clicked-for-me-until-i-wrapped-three-llm-apis) | Done |
-| 2 | Messages & prompts | Encapsulation, composition, dataclasses | `phase-2` | Coming soon | In progress |
-| 3 | Tools & function calling | Strategy pattern, tool registry | — | Coming soon | Planned |
+| 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | Coming soon | Done |
+| 3 | Tools & function calling | Strategy pattern, tool registry | — | Coming soon | In progress |
 | 4 | Memory | Polymorphism, Template Method | — | Coming soon | Planned |
 | 5 | Steps | Composite pattern | — | Coming soon | Planned |
 | 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | Planned |
