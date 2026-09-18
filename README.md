@@ -21,7 +21,7 @@ needs it, so every concept comes with a real problem it solves.
 
 mingraph is a learning project, not a library. Each phase takes one piece of
 the LangChain/LangGraph stack (provider wrappers, messages, tools, memory,
-chains, retrievers, the agent loop), rebuilds a minimal version of it, and uses
+steps, retrievers, the agent loop), rebuilds a minimal version of it, and uses
 it to practise one object-oriented idea or design pattern. The roadmap ends
 with a capstone: a tiny multi-agent graph orchestrator.
 
@@ -43,11 +43,11 @@ was built, the design decisions behind it, and what went wrong along the way.
 
 | # | Phase | OOP concept / pattern | Code | Blog post | Status |
 |---|-------|-----------------------|------|-----------|--------|
-| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | Coming soon | Done |
-| 2 | Messages & prompts | Encapsulation, composition, dataclasses | `phase-2` | Coming soon | In progress |
-| 3 | Tools & function calling | Strategy pattern, tool registry | — | Coming soon | Planned |
+| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and Polymorphism Never Clicked for Me Until I Wrapped Three LLM APIs](https://thearchitectsmind.hashnode.dev/abstraction-and-polymorphism-never-clicked-for-me-until-i-wrapped-three-llm-apis) | Done |
+| 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | Coming soon | Done |
+| 3 | Tools & function calling | Strategy pattern, tool registry | — | Coming soon | In progress |
 | 4 | Memory | Polymorphism, Template Method | — | Coming soon | Planned |
-| 5 | Chains | Composite, operator overloading (`\|` pipe) | — | Coming soon | Planned |
+| 5 | Steps | Composite pattern | — | Coming soon | Planned |
 | 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | Planned |
 | 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | Planned |
 | ★ | Capstone | A mini multi-agent graph orchestrator | — | Coming soon | Planned |
@@ -58,7 +58,9 @@ was built, the design decisions behind it, and what went wrong along the way.
 mingraph/
 ├── mingraph/
 │   ├── __init__.py
-│   ├── llm.py          # BaseLLM: the provider contract callers depend on
+│   ├── llm.py          # BaseLLM contract and the LLMResponse it returns
+│   ├── messages.py     # Message: a sealed, validated role + content
+│   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
 │   └── providers.py    # OpenAI, Anthropic and Ollama adapters
 ├── requirements.txt    # pinned provider SDKs
 ├── LICENSE
@@ -108,27 +110,49 @@ for example `qwen3` or a Gemma model such as `gemma3` or `gemma4`.
 
 ## Usage
 
-Calling code depends only on `BaseLLM`, so switching providers is a one-line
-change:
+A prompt template turns variables plus the conversation so far into a list of
+messages. `generate` sends that list and returns the assistant's reply with
+metadata about the call. Calling code depends only on `BaseLLM`, so switching
+providers is a one-line change:
 
 ```python
 from mingraph.llm import BaseLLM
+from mingraph.messages import Message
+from mingraph.prompts import ChatPromptTemplate, MessagesPlaceholder
 from mingraph.providers import AnthropicLLM, OllamaLLM, OpenAILLM
 
+template = ChatPromptTemplate([
+    Message("system", "You are a helpful assistant. Answer in one short sentence."),
+    MessagesPlaceholder("history"),
+    Message("user", "{question}"),
+])
 
-def summarize(llm: BaseLLM, text: str) -> str:
-    return llm.generate(f"Summarize in one sentence:\n\n{text}")
+
+def chat(llm: BaseLLM, questions: list[str]) -> None:
+    history: list[Message] = []
+    for question in questions:
+        messages = template.format_messages(history=history, question=question)
+        response = llm.generate(messages)
+        print(f"{response.message.content}  [{response.stop_reason}, {response.output_tokens} output tokens]")
+        history += [messages[-1], response.message]
 
 
 llm = OllamaLLM("qwen3.5")  # or OpenAILLM("gpt-5-mini"), AnthropicLLM("claude-sonnet-5")
-print(summarize(llm, "mingraph rebuilds LangGraph building blocks from scratch."))
+chat(llm, ["Hi, I'm Jai.", "What's my name?"])
 ```
+
+The second answer can only come from the history. Filling a template fails
+loudly on a missing or unknown variable, and the first turn passes `history=[]`
+explicitly. With a thinking model such as `qwen3.5`, `output_tokens` includes
+the model's hidden reasoning, so it can be far larger than the visible reply.
 
 ## References
 
 - [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
 - [LangGraph documentation](https://docs.langchain.com/oss/python/langgraph/overview)
 - [Python `abc` module](https://docs.python.org/3/library/abc.html)
+- [Python `dataclasses` module](https://docs.python.org/3/library/dataclasses.html)
+- [LangChain `ChatPromptTemplate` reference](https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate)
 - [Refactoring.Guru: design patterns](https://refactoring.guru/design-patterns)
 - Provider SDKs: [openai-python](https://github.com/openai/openai-python),
   [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python),
