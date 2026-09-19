@@ -1,10 +1,12 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Literal
 
 from mingraph.messages import AssistantMessage, Message
+from mingraph.tools import Tool
 
-StopReason = Literal["stop", "length", "other"]
+StopReason = Literal["stop", "length", "tool_call", "other"]
 
 
 @dataclass(frozen=True)
@@ -23,6 +25,6 @@ class BaseLLM(ABC):
     Callers depend only on this interface, never on a specific provider.
     """
     @abstractmethod
-    def generate(self, messages: list[Message]) -> LLMResponse:
-        """Send the conversation to the model and return its reply."""
+    def generate(self, messages: list[Message], tools: Sequence[Tool] = ()) -> LLMResponse:
+        """Send the conversation, plus any tools on offer, to the model and return its reply."""
         raise NotImplementedError
