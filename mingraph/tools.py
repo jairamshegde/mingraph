@@ -2,6 +2,8 @@ import copy
 import inspect
 from collections.abc import Callable, Mapping
 
+from mingraph.messages import ToolCall, ToolMessage
+
 _JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
 
 
@@ -50,6 +52,34 @@ class Tool:
             if not _matches(value, expected):
                 raise TypeError(f"tool {self.name!r}: {name!r} must be {expected.__name__}, got {type(value).__name__}")
         return str(self._fn(**args))
+
+
+class ToolRegistry:
+    """The tools on offer, looked up by name. Names must be unique across the whole set."""
+
+    def __init__(self):
+        self._tools: dict[str, Tool] = {}
+
+    def add(self, tool: Tool) -> None:
+        if not isinstance(tool, Tool):
+            raise TypeError(f"expected a Tool, got {type(tool).__name__} (missing @Tool?)")
+        if tool.name in self._tools:
+            raise ValueError(f"a tool named {tool.name!r} is already registered")
+        self._tools[tool.name] = tool
+
+    def get(self, name: str) -> Tool:
+        if name not in self._tools:
+            raise KeyError(f"no tool named {name!r}; available: {sorted(self._tools)}")
+        return self._tools[name]
+
+    @property
+    def tools(self) -> tuple[Tool, ...]:
+        """Every registered tool, in the order added: the menu handed to a provider."""
+        return tuple(self._tools.values())
+
+    def run(self, call: ToolCall) -> ToolMessage:
+        """Run the tool a call asks for and answer it with the call's id."""
+        return ToolMessage(self.get(call.name).run(call.args), tool_call_id=call.id)
 
 
 def _matches(value: object, expected: type) -> bool:
