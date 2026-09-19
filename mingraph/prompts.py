@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from string import Formatter
 
 from mingraph.messages import Message
@@ -47,7 +47,7 @@ class ChatPromptTemplate:
                     raise TypeError(f"{part.name!r} must be a list of Message")
                 messages.extend(inserted)
             else:
-                messages.append(Message(part.role, part.content.format(**values)))
+                messages.append(replace(part, content=part.content.format(**values)))
         return messages
 
 

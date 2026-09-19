@@ -59,7 +59,7 @@ mingraph/
 ├── mingraph/
 │   ├── __init__.py
 │   ├── llm.py          # BaseLLM contract and the LLMResponse it returns
-│   ├── messages.py     # Message: a sealed, validated role + content
+│   ├── messages.py     # Sealed message types, one per kind of line, and ToolCall
 │   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
 │   └── providers.py    # OpenAI, Anthropic and Ollama adapters
 ├── requirements.txt    # pinned provider SDKs
@@ -117,14 +117,14 @@ providers is a one-line change:
 
 ```python
 from mingraph.llm import BaseLLM
-from mingraph.messages import Message
+from mingraph.messages import Message, SystemMessage, UserMessage
 from mingraph.prompts import ChatPromptTemplate, MessagesPlaceholder
 from mingraph.providers import AnthropicLLM, OllamaLLM, OpenAILLM
 
 template = ChatPromptTemplate([
-    Message("system", "You are a helpful assistant. Answer in one short sentence."),
+    SystemMessage("You are a helpful assistant. Answer in one short sentence."),
     MessagesPlaceholder("history"),
-    Message("user", "{question}"),
+    UserMessage("{question}"),
 ])
 
 

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Literal
 
-from mingraph.messages import Message
+from mingraph.messages import AssistantMessage, Message
 
 StopReason = Literal["stop", "length", "other"]
 
@@ -12,7 +12,7 @@ class LLMResponse:
     """The assistant's reply plus metadata about the call that produced it.
     Token counts are None when the provider didn't report them.
     """
-    message: Message
+    message: AssistantMessage
     input_tokens: int | None
     output_tokens: int | None
     stop_reason: StopReason
