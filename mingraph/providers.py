@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import Sequence
 
 from anthropic import Anthropic
@@ -49,16 +50,22 @@ class OllamaLLM(BaseLLM):
         self._model = model
 
     def generate(self, messages: list[Message], tools: Sequence[Tool] = ()) -> LLMResponse:
-        _reject_tool_lines(messages, tools)
-        response = self._client.chat(
-            model=self._model,
-            messages=[{"role": m.role, "content": m.content} for m in messages],
-        )
+        request = {"model": self._model, "messages": _ollama_messages(messages)}
+        if tools:
+            request["tools"] = [_function_tool(t) for t in tools]
+        response = self._client.chat(**request)
+        # Ollama's tool calls carry no id, so we stamp one; it must be unique across the conversation.
+        tool_calls = [
+            ToolCall(c.function.name, c.function.arguments, f"call_{uuid.uuid4().hex}")
+            for c in response.message.tool_calls or []
+        ]
+        # done_reason stays "stop" even when the reply is a tool call, so the reply itself decides.
+        stop_reason = "tool_call" if tool_calls else self._STOP_REASONS.get(response.done_reason, "other")
         return LLMResponse(
-            message=AssistantMessage(response.message.content or ""),
+            message=AssistantMessage(response.message.content or "", tool_calls=tool_calls),
             input_tokens=response.prompt_eval_count,
             output_tokens=response.eval_count,
-            stop_reason=self._STOP_REASONS.get(response.done_reason, "other"),
+            stop_reason=stop_reason,
         )
 
 
@@ -118,6 +125,27 @@ def _openai_message(m: Message) -> dict:
             ],
         }
     return {"role": m.role, "content": m.content}
+
+
+def _ollama_messages(messages: list[Message]) -> list[dict]:
+    """Ollama answers a tool call by name, not by id, so the name comes from the call the id points to."""
+    names = {c.id: c.name for m in messages if isinstance(m, AssistantMessage) for c in m.tool_calls}
+    translated = []
+    for m in messages:
+        if isinstance(m, ToolMessage):
+            translated.append({"role": "tool", "tool_name": names[m.tool_call_id], "content": m.content})
+        elif isinstance(m, AssistantMessage) and m.tool_calls:
+            translated.append({
+                "role": "assistant",
+                "content": m.content,
+                "tool_calls": [
+                    {"type": "function", "function": {"name": c.name, "arguments": dict(c.args)}}
+                    for c in m.tool_calls
+                ],
+            })
+        else:
+            translated.append({"role": m.role, "content": m.content})
+    return translated
 
 
 def _reject_tool_lines(messages: list[Message], tools: Sequence[Tool]) -> None:
