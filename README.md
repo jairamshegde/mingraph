@@ -45,8 +45,8 @@ was built, the design decisions behind it, and what went wrong along the way.
 |---|-------|-----------------------|------|-----------|--------|
 | 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and Polymorphism Never Clicked for Me Until I Wrapped Three LLM APIs](https://thearchitectsmind.hashnode.dev/abstraction-and-polymorphism-never-clicked-for-me-until-i-wrapped-three-llm-apis) | Done |
 | 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | [What Encapsulation Actually Buys You](https://thearchitectsmind.hashnode.dev/what-encapsulation-actually-buys-you) | Done |
-| 3 | Tools & function calling | Strategy pattern, tool registry | — | Coming soon | In progress |
-| 4 | Memory | Polymorphism, Template Method | — | Coming soon | Planned |
+| 3 | Tools & function calling | Strategy pattern, tool registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern Never Clicked for Me Until a Model Started Calling My Functions](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) | Done |
+| 4 | Memory | Polymorphism, Template Method | — | Coming soon | In progress |
 | 5 | Steps | Composite pattern | — | Coming soon | Planned |
 | 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | Planned |
 | 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | Planned |
@@ -59,9 +59,10 @@ mingraph/
 ├── mingraph/
 │   ├── __init__.py
 │   ├── llm.py          # BaseLLM contract and the LLMResponse it returns
-│   ├── messages.py     # Message: a sealed, validated role + content
+│   ├── messages.py     # Sealed message types, one per kind of line, and ToolCall
 │   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
-│   └── providers.py    # OpenAI, Anthropic and Ollama adapters
+│   ├── providers.py    # OpenAI, Anthropic and Ollama adapters
+│   └── tools.py        # Tool, read off a function, and ToolRegistry
 ├── requirements.txt    # pinned provider SDKs
 ├── LICENSE
 └── README.md
@@ -110,6 +111,8 @@ for example `qwen3` or a Gemma model such as `gemma3` or `gemma4`.
 
 ## Usage
 
+### Chat with history
+
 A prompt template turns variables plus the conversation so far into a list of
 messages. `generate` sends that list and returns the assistant's reply with
 metadata about the call. Calling code depends only on `BaseLLM`, so switching
@@ -117,14 +120,14 @@ providers is a one-line change:
 
 ```python
 from mingraph.llm import BaseLLM
-from mingraph.messages import Message
+from mingraph.messages import Message, SystemMessage, UserMessage
 from mingraph.prompts import ChatPromptTemplate, MessagesPlaceholder
 from mingraph.providers import AnthropicLLM, OllamaLLM, OpenAILLM
 
 template = ChatPromptTemplate([
-    Message("system", "You are a helpful assistant. Answer in one short sentence."),
+    SystemMessage("You are a helpful assistant. Answer in one short sentence."),
     MessagesPlaceholder("history"),
-    Message("user", "{question}"),
+    UserMessage("{question}"),
 ])
 
 
@@ -146,6 +149,61 @@ loudly on a missing or unknown variable, and the first turn passes `history=[]`
 explicitly. With a thinking model such as `qwen3.5`, `output_tokens` includes
 the model's hidden reasoning, so it can be far larger than the visible reply.
 
+### Tool calling
+
+`@Tool` turns a plain function into a tool. Its name, description and argument
+schema are read off the function's name, docstring and type hints. A
+`ToolRegistry` holds the tools, refuses two with the same name, and runs the
+call the model asks for:
+
+```python
+from mingraph.tools import Tool, ToolRegistry
+
+
+@Tool
+def get_weather(city: str) -> str:
+    """Get the current weather for a city."""
+    return f"It is 18°C and cloudy in {city}."
+
+
+@Tool
+def add(a: int, b: int) -> int:
+    """Add two whole numbers."""
+    return a + b
+
+
+registry = ToolRegistry()
+registry.add(get_weather)
+registry.add(add)
+
+
+def ask(llm: BaseLLM, question: str) -> str:
+    messages: list[Message] = [
+        SystemMessage("You are a helpful assistant. Use the tools when they help."),
+        UserMessage(question),
+    ]
+    response = llm.generate(messages, tools=registry.tools)
+    if response.stop_reason != "tool_call":
+        return response.message.content
+
+    messages.append(response.message)             # the model's request, with its tool calls
+    for call in response.message.tool_calls:
+        messages.append(registry.run(call))       # the result, carrying the call's id
+    return llm.generate(messages, tools=registry.tools).message.content
+
+
+llm = OpenAILLM("gpt-5-mini")  # or OllamaLLM("qwen3.5")
+print(ask(llm, "What's the weather in Paris right now?"))
+print(ask(llm, "What is 1234 + 5678?"))
+```
+
+The calling code never names a tool, so adding one is a new `@Tool` function
+and one `registry.add` line. Tool arguments from the model are checked against
+the function's signature before it runs. Tool calling works with OpenAI and
+Ollama; `AnthropicLLM` raises `NotImplementedError` when given tools. The
+example runs one round of tool calls; looping until the model stops asking
+comes with the agent loop in a later phase.
+
 ## References
 
 - [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
@@ -153,6 +211,8 @@ the model's hidden reasoning, so it can be far larger than the visible reply.
 - [Python `abc` module](https://docs.python.org/3/library/abc.html)
 - [Python `dataclasses` module](https://docs.python.org/3/library/dataclasses.html)
 - [LangChain `ChatPromptTemplate` reference](https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate)
+- [LangChain tools](https://docs.langchain.com/oss/python/langchain/tools)
+- [Python `inspect` module](https://docs.python.org/3/library/inspect.html)
 - [Refactoring.Guru: design patterns](https://refactoring.guru/design-patterns)
 - Provider SDKs: [openai-python](https://github.com/openai/openai-python),
   [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python),
