@@ -46,8 +46,8 @@ was built, the design decisions behind it, and what went wrong along the way.
 | 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and Polymorphism Never Clicked for Me Until I Wrapped Three LLM APIs](https://thearchitectsmind.hashnode.dev/abstraction-and-polymorphism-never-clicked-for-me-until-i-wrapped-three-llm-apis) | Done |
 | 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | [What Encapsulation Actually Buys You](https://thearchitectsmind.hashnode.dev/what-encapsulation-actually-buys-you) | Done |
 | 3 | Tools & function calling | Strategy pattern, tool registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern Never Clicked for Me Until a Model Started Calling My Functions](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) | Done |
-| 4 | Memory | Polymorphism, Template Method | — | Coming soon | In progress |
-| 5 | Steps | Composite pattern | — | Coming soon | Planned |
+| 4 | Memory | Polymorphism, Template Method | [`phase-4`](https://github.com/jairamshegde/mingraph/tree/phase-4) | [Template Method, and Why Your LLM's Memory Isn't Its Chat History](https://thearchitectsmind.hashnode.dev/template-method-and-why-your-llm-s-memory-isn-t-its-chat-history) | Done |
+| 5 | Steps | Composite pattern | — | Coming soon | In progress |
 | 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | Planned |
 | 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | Planned |
 | ★ | Capstone | A mini multi-agent graph orchestrator | — | Coming soon | Planned |
@@ -59,6 +59,7 @@ mingraph/
 ├── mingraph/
 │   ├── __init__.py
 │   ├── llm.py          # BaseLLM contract and the LLMResponse it returns
+│   ├── memory.py       # Memory base and the KeepAll, LastN and Summarise strategies
 │   ├── messages.py     # Sealed message types, one per kind of line, and ToolCall
 │   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
 │   ├── providers.py    # OpenAI, Anthropic and Ollama adapters
@@ -204,6 +205,43 @@ Ollama; `AnthropicLLM` raises `NotImplementedError` when given tools. The
 example runs one round of tool calls; looping until the model stops asking
 comes with the agent loop in a later phase.
 
+### Memory
+
+A `Memory` keeps the whole conversation and builds the list to send on each
+call. The record only grows; a strategy decides how much of it the model sees.
+`KeepAll` sends everything, `LastN` sends the last few turns, and `Summarise`
+sends an LLM-written recap of older turns plus the recent ones. A turn is a
+user message and everything after it up to the next one, so a tool call is
+never separated from its result:
+
+```python
+from mingraph.memory import KeepAll, LastN, Memory, Summarise
+
+
+def chat(llm: BaseLLM, memory: Memory, questions: list[str]) -> None:
+    for question in questions:
+        memory.add(UserMessage(question))
+        response = llm.generate(memory.messages())
+        memory.add(response.message)
+    print(f"{response.message.content}  [{response.input_tokens} input tokens]")
+
+
+system = SystemMessage("You help a family plan a trip. Answer in one short sentence.")
+questions = ["Hi, I'm Asha. We land in Pune on the 5th.", "We're a family of four.",
+             "Suggest one vegetarian dish to try there.", "What's my name, and which day do we land?"]
+
+llm = OpenAILLM("gpt-5-mini")  # or OllamaLLM("qwen3.5")
+chat(llm, KeepAll(system=system), questions)
+chat(llm, LastN(1, system=system), questions)
+chat(llm, Summarise(llm, keep=1, trigger=2, system=system), questions)
+```
+
+The calling code is the same for all three. `KeepAll` answers the last
+question from the full history, `LastN(1)` can't answer it, and `Summarise`
+answers from its recap for fewer input tokens. The system message is given
+once, to the constructor, and always comes first. The recap is sent as a user
+message and never stored in the conversation.
+
 ## References
 
 - [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
@@ -212,6 +250,8 @@ comes with the agent loop in a later phase.
 - [Python `dataclasses` module](https://docs.python.org/3/library/dataclasses.html)
 - [LangChain `ChatPromptTemplate` reference](https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate)
 - [LangChain tools](https://docs.langchain.com/oss/python/langchain/tools)
+- [LangChain short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory)
+- [OpenAI cookbook: session memory](https://developers.openai.com/cookbook/examples/agents_sdk/session_memory)
 - [Python `inspect` module](https://docs.python.org/3/library/inspect.html)
 - [Refactoring.Guru: design patterns](https://refactoring.guru/design-patterns)
 - Provider SDKs: [openai-python](https://github.com/openai/openai-python),
