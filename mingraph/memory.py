@@ -1,8 +1,15 @@
 from abc import ABC, abstractmethod
 
-from mingraph.messages import Message, SystemMessage, UserMessage
+from mingraph.llm import BaseLLM
+from mingraph.messages import AssistantMessage, Message, SystemMessage, UserMessage
 
 Turn = list[Message]
+
+_RECAP_PREFIX = "Here is a summary of the conversation to date:\n\n"
+_SUMMARISE_INSTRUCTION = (
+    "Summarise the conversation below. Keep every fact, name, date and decision "
+    "that may matter later. Reply with the summary only.\n\n"
+)
 
 
 class Memory(ABC):
@@ -54,3 +61,45 @@ class LastN(Memory):
 
     def _pick(self, turns: list[Turn]) -> list[Message]:
         return [m for turn in turns[-self._n:] for m in turn]
+
+
+class Summarise(Memory):
+    """Send a recap of older turns, plus every turn the recap doesn't cover yet.
+    The recap is rewritten only when more than `trigger` turns are uncovered,
+    and then covers all but the last `keep` turns.
+    """
+    def __init__(self, llm: BaseLLM, keep: int, trigger: int, system: SystemMessage):
+        if not 1 <= keep < trigger:
+            raise ValueError(f"need 1 <= keep < trigger, got keep={keep}, trigger={trigger}")
+        super().__init__(system)
+        self._llm = llm
+        self._keep = keep
+        self._trigger = trigger
+        self._recap: str | None = None
+        self._covered = 0  # how many turns, from the start, the recap covers
+
+    def _pick(self, turns: list[Turn]) -> list[Message]:
+        uncovered = turns[self._covered:]
+        if len(uncovered) > self._trigger:
+            to_cover = uncovered[:-self._keep]
+            self._recap = self._rewrite(to_cover)
+            self._covered += len(to_cover)
+            uncovered = uncovered[-self._keep:]
+        picked = [m for turn in uncovered for m in turn]
+        if self._recap is None:
+            return picked
+        return [UserMessage(_RECAP_PREFIX + self._recap), *picked]
+
+    def _rewrite(self, turns: list[Turn]) -> str:
+        # Rolling: the old recap plus the newly covered turns, as a plain-text printout.
+        lines = [f"Summary so far: {self._recap}"] if self._recap else []
+        lines += [_printout(m) for turn in turns for m in turn]
+        response = self._llm.generate([UserMessage(_SUMMARISE_INSTRUCTION + "\n".join(lines))])
+        return response.message.content
+
+
+def _printout(message: Message) -> str:
+    parts = [message.content] if message.content else []
+    if isinstance(message, AssistantMessage):
+        parts += [f"(called {c.name} {dict(c.args)})" for c in message.tool_calls]
+    return f"{message.role}: {' '.join(parts)}"
