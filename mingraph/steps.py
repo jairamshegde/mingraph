@@ -41,3 +41,21 @@ class Branch(Step):
         if name not in self._steps:
             raise KeyError(f"choose returned {name!r}, expected one of {list(self._steps)}")
         return self._steps[name].run(state)
+
+
+class Parallel(Step):
+    """Runs every step on the same state; none sees another's update.
+    Returns all their updates as one. Two steps setting the same slot is an error.
+    """
+    def __init__(self, steps: list[Step]):
+        self._steps = list(steps)
+
+    def run(self, state: State) -> State:
+        added: State = {}
+        for step in self._steps:
+            update = step.run(state)
+            clash = added.keys() & update.keys()
+            if clash:
+                raise ValueError(f"more than one step set {sorted(clash)}")
+            added = {**added, **update}
+        return added
