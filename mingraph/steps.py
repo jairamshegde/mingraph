@@ -1,5 +1,9 @@
 from abc import ABC, abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence as Seq
+
+from mingraph.llm import BaseLLM
+from mingraph.prompts import ChatPromptTemplate
+from mingraph.tools import Tool, ToolRegistry
 
 State = dict[str, object]
 
@@ -59,3 +63,39 @@ class Parallel(Step):
                 raise ValueError(f"more than one step set {sorted(clash)}")
             added = {**added, **update}
         return added
+
+
+class Prompt(Step):
+    """Fills a template from the state slots named after its variables."""
+    def __init__(self, template: ChatPromptTemplate, write: str = "messages"):
+        self._template = template
+        self._write = write
+
+    def run(self, state: State) -> State:
+        values = {name: state[name] for name in self._template.variables}
+        return {self._write: self._template.format_messages(**values)}
+
+
+class CallModel(Step):
+    """Sends the messages in one slot to the model and puts its reply in another.
+    Only the reply goes in the state; the token counts stay on the response.
+    """
+    def __init__(self, llm: BaseLLM, tools: Seq[Tool] = (), read: str = "messages", write: str = "reply"):
+        self._llm = llm
+        self._tools = tuple(tools)
+        self._read = read
+        self._write = write
+
+    def run(self, state: State) -> State:
+        return {self._write: self._llm.generate(state[self._read], self._tools).message}
+
+
+class RunTools(Step):
+    """Runs every tool call in a reply and puts the answers in a slot, in call order."""
+    def __init__(self, registry: ToolRegistry, read: str = "reply", write: str = "tool_results"):
+        self._registry = registry
+        self._read = read
+        self._write = write
+
+    def run(self, state: State) -> State:
+        return {self._write: [self._registry.run(call) for call in state[self._read].tool_calls]}
