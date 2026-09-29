@@ -1,3 +1,5 @@
+import random
+import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Sequence as Seq
 
@@ -99,3 +101,25 @@ class RunTools(Step):
 
     def run(self, state: State) -> State:
         return {self._write: [self._registry.run(call) for call in state[self._read].tool_calls]}
+
+
+class Retry(Step):
+    """Runs one step, trying again on the listed failures, up to `attempts` tries in all.
+    Before retry n it waits wait * (2 ** (n - 1) + a random 0..1), so wait=0 never sleeps.
+    """
+    def __init__(self, step: Step, attempts: int = 3, on: tuple[type[Exception], ...] = (Exception,), wait: float = 1.0):
+        if attempts < 1:
+            raise ValueError(f"attempts must be at least 1, got {attempts}")
+        self._step = step
+        self._attempts = attempts
+        self._on = on
+        self._wait = wait
+
+    def run(self, state: State) -> State:
+        for attempt in range(1, self._attempts + 1):
+            try:
+                return self._step.run(state)
+            except self._on:
+                if attempt == self._attempts:
+                    raise
+                time.sleep(self._wait * (2 ** (attempt - 1) + random.uniform(0, 1)))
