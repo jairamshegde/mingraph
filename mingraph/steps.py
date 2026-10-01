@@ -92,6 +92,16 @@ class CallModel(Step):
         return {self._write: self._llm.generate(state[self._read], self._tools).message}
 
 
+class Text(Step):
+    """Puts the text of the reply in one slot into another slot, so a later prompt can use it."""
+    def __init__(self, read: str = "reply", write: str = "text"):
+        self._read = read
+        self._write = write
+
+    def run(self, state: State) -> State:
+        return {self._write: state[self._read].content}
+
+
 class RunTools(Step):
     """Runs every tool call in a reply and puts the answers in a slot, in call order."""
     def __init__(self, registry: ToolRegistry, read: str = "reply", write: str = "tool_results"):
