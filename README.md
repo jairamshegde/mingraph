@@ -47,8 +47,8 @@ was built, the design decisions behind it, and what went wrong along the way.
 | 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | [What Encapsulation Actually Buys You](https://thearchitectsmind.hashnode.dev/what-encapsulation-actually-buys-you) | Done |
 | 3 | Tools & function calling | Strategy pattern, tool registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern Never Clicked for Me Until a Model Started Calling My Functions](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) | Done |
 | 4 | Memory | Polymorphism, Template Method | [`phase-4`](https://github.com/jairamshegde/mingraph/tree/phase-4) | [Template Method, and Why Your LLM's Memory Isn't Its Chat History](https://thearchitectsmind.hashnode.dev/template-method-and-why-your-llm-s-memory-isn-t-its-chat-history) | Done |
-| 5 | Steps | Composite pattern | — | Coming soon | In progress |
-| 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | Planned |
+| 5 | Steps | Composite pattern | [`phase-5`](https://github.com/jairamshegde/mingraph/tree/phase-5) | [The Composite Pattern in a Python LLM Pipeline](https://thearchitectsmind.hashnode.dev/the-composite-pattern-in-a-python-llm-pipeline) | Done |
+| 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | In progress |
 | 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | Planned |
 | ★ | Capstone | A mini multi-agent graph orchestrator | — | Coming soon | Planned |
 
@@ -63,6 +63,7 @@ mingraph/
 │   ├── messages.py     # Sealed message types, one per kind of line, and ToolCall
 │   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
 │   ├── providers.py    # OpenAI, Anthropic and Ollama adapters
+│   ├── steps.py        # Step, the Sequence/Branch/Parallel containers, wrapper steps and Retry
 │   └── tools.py        # Tool, read off a function, and ToolRegistry
 ├── requirements.txt    # pinned provider SDKs
 ├── LICENSE
@@ -242,6 +243,65 @@ answers from its recap for fewer input tokens. The system message is given
 once, to the constructor, and always comes first. The recap is sent as a user
 message and never stored in the conversation.
 
+### Steps
+
+Every step has one method, `run(state)`. It reads what it needs from a shared
+state dict and returns a dict of only the keys it set. The containers are
+steps too: `Sequence` runs steps in order, `Branch` runs one step picked from
+the state, and `Parallel` runs steps on the same state and merges their
+results. So a whole pipeline fits anywhere a single step fits. `Prompt`,
+`CallModel`, `Text` and `RunTools` wrap the template, the model and the tool
+registry, and `Retry` wraps any one step:
+
+```python
+from mingraph.steps import Branch, CallModel, Parallel, Prompt, Retry, RunTools, Sequence, State, Step, Text
+
+llm = OpenAILLM("gpt-5-mini")  # or OllamaLLM("qwen3.5")
+
+
+def template(text: str) -> ChatPromptTemplate:
+    return ChatPromptTemplate([UserMessage(text)])
+
+
+# Two model calls in a row: draft a sentence, then shorten it.
+tagline = Sequence([
+    Prompt(template("Write one sentence about a family trip to {city}."), write="draft_msgs"),
+    Retry(CallModel(llm, read="draft_msgs", write="draft_reply")),
+    Text(read="draft_reply", write="draft"),
+    Prompt(template("Shorten this to at most six words: {draft}"), write="short_msgs"),
+    CallModel(llm, read="short_msgs", write="tagline"),
+])
+
+# One model call that may ask for a tool, and a Branch that runs it if it did.
+weather = Sequence([
+    Prompt(template("What's the weather in {city} right now?")),
+    CallModel(llm, tools=registry.tools),
+    Branch(lambda state: "tool" if state["reply"].tool_calls else "done",
+           {"tool": RunTools(registry), "done": Sequence([])}),
+])
+
+trip = Parallel([tagline, weather])
+
+
+def run(step: Step, start: State) -> State:
+    return {**start, **step.run(start)}
+
+
+state = run(trip, {"city": "Pune"})
+print(state["tagline"].content)                                # e.g. Family weekend: Shaniwar Wada, vada-pav, sunset
+print([result.content for result in state["tool_results"]])    # ['It is 18°C and cloudy in Pune.']
+```
+
+The imports and `registry` come from the examples above. `run` never checks what it was given. `run(weather, {"city": "Pune"})` works
+the same way as `run(trip, ...)`, as would a single `CallModel`. `Text` is
+there because `CallModel` stores the reply message, and a template would print
+the whole message object instead of its text. `Parallel` raises a `ValueError`
+if two of its steps set the same key, which is why the two pipelines use
+different slot names. `Retry` tries a failing step up to three times, waiting
+longer each time, and wrapping only the step that can fail keeps the steps
+before it from running twice. The steps inside `Parallel` run one after
+another, not at the same time.
+
 ## References
 
 - [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
@@ -250,6 +310,8 @@ message and never stored in the conversation.
 - [Python `dataclasses` module](https://docs.python.org/3/library/dataclasses.html)
 - [LangChain `ChatPromptTemplate` reference](https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate)
 - [LangChain tools](https://docs.langchain.com/oss/python/langchain/tools)
+- [LangChain `Runnable` reference](https://reference.langchain.com/python/langchain-core/runnables/base/Runnable)
+- [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
 - [LangChain short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory)
 - [OpenAI cookbook: session memory](https://developers.openai.com/cookbook/examples/agents_sdk/session_memory)
 - [Python `inspect` module](https://docs.python.org/3/library/inspect.html)
