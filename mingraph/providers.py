@@ -8,6 +8,7 @@ from openai import OpenAI
 
 from mingraph.llm import BaseLLM, LLMResponse
 from mingraph.messages import AssistantMessage, Message, ToolCall, ToolMessage
+from mingraph.retrievers import Embeddings
 from mingraph.tools import Tool
 
 
@@ -102,6 +103,29 @@ class AnthropicLLM(BaseLLM):
             output_tokens=response.usage.output_tokens,
             stop_reason=self._STOP_REASONS.get(response.stop_reason, "other"),
         )
+
+
+class OllamaEmbedder(Embeddings):
+    """Local embedding adapter, backed by a running Ollama server.
+    query_prefix goes in front of queries only, for models that want an instruction there (e.g. Qwen3-Embedding).
+    """
+
+    def __init__(self, model: str, dimensions: int | None = None, query_prefix: str = "",
+                 host: str = "http://localhost:11434"):
+        self._client = OllamaClient(host=host)
+        self._model = model
+        self._dimensions = dimensions
+        self._query_prefix = query_prefix
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return self._embed(texts)
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._embed([self._query_prefix + text])[0]
+
+    def _embed(self, texts: list[str]) -> list[list[float]]:
+        response = self._client.embed(model=self._model, input=texts, dimensions=self._dimensions)
+        return [list(vector) for vector in response.embeddings]
 
 
 def _function_tool(tool: Tool) -> dict:
