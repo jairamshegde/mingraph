@@ -79,6 +79,17 @@ class VectorStoreRetriever(Retriever):
         return self._store.similarity_search(query, self._k)
 
 
+def split_text(text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
+    """Cuts text into pieces of up to chunk_size characters, each starting chunk_overlap before the last one ended.
+    Doesn't read the text, so a sentence can still be cut; the overlap only makes that less likely.
+    """
+    if not 0 <= chunk_overlap < chunk_size:
+        raise ValueError(f"need 0 <= chunk_overlap < chunk_size, got {chunk_overlap} and {chunk_size}")
+    step = chunk_size - chunk_overlap
+    # Stop once the rest of the text is already inside the previous piece's overlap.
+    return [text[i:i + chunk_size] for i in range(0, max(len(text) - chunk_overlap, 1), step)]
+
+
 def _cosine(a: list[float], b: list[float]) -> float:
     # Compares direction only: 1 when two vectors point the same way, 0 at a right angle.
     return sum(x * y for x, y in zip(a, b, strict=True)) / (math.hypot(*a) * math.hypot(*b))
