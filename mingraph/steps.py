@@ -5,6 +5,7 @@ from collections.abc import Callable, Sequence as Seq
 
 from mingraph.llm import BaseLLM
 from mingraph.prompts import ChatPromptTemplate
+from mingraph.retrievers import Retriever
 from mingraph.tools import Tool, ToolRegistry
 
 State = dict[str, object]
@@ -111,6 +112,27 @@ class RunTools(Step):
 
     def run(self, state: State) -> State:
         return {self._write: [self._registry.run(call) for call in state[self._read].tool_calls]}
+
+
+class Retrieve(Step):
+    """Asks a retriever for the documents matching the query in one slot and puts them in another."""
+    def __init__(self, retriever: Retriever, read: str = "question", write: str = "docs"):
+        self._retriever = retriever
+        self._read = read
+        self._write = write
+
+    def run(self, state: State) -> State:
+        return {self._write: self._retriever.invoke(state[self._read])}
+
+
+class FormatDocs(Step):
+    """Joins the text of the documents in one slot, blank line between each, so a prompt can use it."""
+    def __init__(self, read: str = "docs", write: str = "context"):
+        self._read = read
+        self._write = write
+
+    def run(self, state: State) -> State:
+        return {self._write: "\n\n".join(doc.page_content for doc in state[self._read])}
 
 
 class Retry(Step):
