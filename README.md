@@ -48,8 +48,8 @@ was built, the design decisions behind it, and what went wrong along the way.
 | 3 | Tools & function calling | Strategy pattern, tool registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern Never Clicked for Me Until a Model Started Calling My Functions](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) | Done |
 | 4 | Memory | Polymorphism, Template Method | [`phase-4`](https://github.com/jairamshegde/mingraph/tree/phase-4) | [Template Method, and Why Your LLM's Memory Isn't Its Chat History](https://thearchitectsmind.hashnode.dev/template-method-and-why-your-llm-s-memory-isn-t-its-chat-history) | Done |
 | 5 | Steps | Composite pattern | [`phase-5`](https://github.com/jairamshegde/mingraph/tree/phase-5) | [The Composite Pattern in a Python LLM Pipeline](https://thearchitectsmind.hashnode.dev/the-composite-pattern-in-a-python-llm-pipeline) | Done |
-| 6 | RAG retrievers | Dependency injection, interface segregation | — | Coming soon | In progress |
-| 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | Planned |
+| 6 | RAG retrievers | Dependency injection, interface segregation | [`phase-6`](https://github.com/jairamshegde/mingraph/tree/phase-6) | [Dependency Injection and Interface Segregation in a Python RAG Retriever](https://thearchitectsmind.hashnode.dev/dependency-injection-and-interface-segregation-in-a-python-rag-retriever) | Done |
+| 7 | Agent loop | State, Observer (streaming and callbacks) | — | Coming soon | In progress |
 | ★ | Capstone | A mini multi-agent graph orchestrator | — | Coming soon | Planned |
 
 ## Project structure
@@ -62,8 +62,9 @@ mingraph/
 │   ├── memory.py       # Memory base and the KeepAll, LastN and Summarise strategies
 │   ├── messages.py     # Sealed message types, one per kind of line, and ToolCall
 │   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
-│   ├── providers.py    # OpenAI, Anthropic and Ollama adapters
-│   ├── steps.py        # Step, the Sequence/Branch/Parallel containers, wrapper steps and Retry
+│   ├── providers.py    # OpenAI, Anthropic and Ollama adapters, and the Ollama embedder
+│   ├── retrievers.py   # Document, Embeddings, VectorStore, Retriever and split_text
+│   ├── steps.py        # Step, the Sequence/Branch/Parallel containers, wrapper steps, Retrieve and Retry
 │   └── tools.py        # Tool, read off a function, and ToolRegistry
 ├── requirements.txt    # pinned provider SDKs
 ├── LICENSE
@@ -109,7 +110,12 @@ ollama pull qwen3.5
 ```
 
 Any chat model from the [Ollama library](https://ollama.com/library) works,
-for example `qwen3` or a Gemma model such as `gemma3` or `gemma4`.
+for example `qwen3` or a Gemma model such as `gemma3` or `gemma4`. The
+retrieval example also needs an embedding model:
+
+```bash
+ollama pull qwen3-embedding:0.6b
+```
 
 ## Usage
 
@@ -302,6 +308,51 @@ longer each time, and wrapping only the step that can fail keeps the steps
 before it from running twice. The steps inside `Parallel` run one after
 another, not at the same time.
 
+### Retrieval (RAG)
+
+Retrieval finds the documents that match a question and puts them in the
+prompt. Three small interfaces split the job. An `Embeddings` model turns text
+into a vector, so texts with similar meaning land close together. A
+`VectorStore` keeps documents with their vectors and finds the ones nearest a
+query. A `Retriever` only returns documents for a query. The store is handed
+its embedder, and the `Retrieve` step is handed a retriever, never the store:
+
+```python
+from mingraph.providers import OllamaEmbedder
+from mingraph.retrievers import Document, InMemoryVectorStore, VectorStoreRetriever
+from mingraph.steps import FormatDocs, Retrieve
+
+cards = [
+    "Jairam's dal: 1 cup toor, pressure cook for 3 whistles, then tadka with ghee and hing.",
+    "Rajma: soak overnight, pressure cook for 6 whistles until soft.",
+    "Gulab jamun: fry the balls on low heat till golden, then soak in warm sugar syrup.",
+]
+store = InMemoryVectorStore(OllamaEmbedder("qwen3-embedding:0.6b", dimensions=384))
+store.add_documents([Document(card, {"source": "family recipes"}) for card in cards])
+
+rag = Sequence([
+    Retrieve(VectorStoreRetriever(store, k=2)),
+    FormatDocs(),
+    Prompt(template("Answer using only these recipes. If they don't say, say so.\n\n{context}\n\nQuestion: {question}")),
+    CallModel(llm),
+])
+
+state = run(rag, {"question": "How many whistles for Jairam's dal?"})
+print(state["reply"].content)                          # 3 whistles.
+print([doc.metadata["source"] for doc in state["docs"]])
+```
+
+`llm`, `template`, `run` and the step imports come from the examples above.
+Swapping the embedder touches only the line that builds the store: a test can
+hand it a fake `Embeddings` that returns vectors picked by hand, so the
+retrieval order is known in advance. One embedder makes every vector in a
+store, cards and questions alike. The store ranks by cosine similarity and
+checks every document on each search. `OllamaEmbedder` takes a `query_prefix`
+for models that want an instruction in front of questions, and
+`split_text(text, chunk_size, chunk_overlap)` cuts a long file into pieces to
+add as documents. The splitter cuts every `chunk_size` characters without
+reading the text, so a piece can lose the words that say what it's about.
+
 ## References
 
 - [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
@@ -312,6 +363,8 @@ another, not at the same time.
 - [LangChain tools](https://docs.langchain.com/oss/python/langchain/tools)
 - [LangChain `Runnable` reference](https://reference.langchain.com/python/langchain-core/runnables/base/Runnable)
 - [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
+- [LangChain retrieval](https://docs.langchain.com/oss/python/langchain/retrieval)
+- [LangChain vector stores](https://docs.langchain.com/oss/python/integrations/vectorstores)
 - [LangChain short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory)
 - [OpenAI cookbook: session memory](https://developers.openai.com/cookbook/examples/agents_sdk/session_memory)
 - [Python `inspect` module](https://docs.python.org/3/library/inspect.html)
