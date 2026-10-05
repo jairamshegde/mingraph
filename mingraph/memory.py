@@ -20,10 +20,22 @@ class Memory(ABC):
         self._system = system
         self._chat: list[Message] = []
 
+    @property
+    def system(self) -> SystemMessage:
+        """The system message sent first on every call."""
+        return self._system
+
+    @system.setter
+    def system(self, message: SystemMessage) -> None:
+        # Replacing, never adding, keeps it exactly one and always first.
+        if not isinstance(message, SystemMessage):
+            raise TypeError(f"expected a SystemMessage, got {type(message).__name__}")
+        self._system = message
+
     def add(self, message: Message) -> None:
         """Record something that happened: a user message, a reply, or a tool result."""
         if isinstance(message, SystemMessage):
-            raise TypeError("the system message is given once, when the memory is created")
+            raise TypeError("the system message is set when the memory is created, or replaced through .system")
         self._chat.append(message)
 
     def messages(self) -> list[Message]:
