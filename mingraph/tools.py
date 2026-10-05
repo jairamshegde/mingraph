@@ -7,6 +7,12 @@ from mingraph.messages import ToolCall, ToolMessage
 _JSON_TYPES = {str: "string", int: "integer", float: "number", bool: "boolean"}
 
 
+class ToolArgsError(Exception):
+    """The model asked for something that can't run as written: an unknown tool, or arguments that don't fit.
+    The model can fix this by sending a corrected call; a failure inside the tool is not this.
+    """
+
+
 class Tool:
     """A function the model can be offered and can ask to call.
     Name, description and argument schema are read off the function, so a tool is declared in one place.
@@ -46,11 +52,11 @@ class Tool:
         try:
             bound = self._signature.bind(**args)
         except TypeError as e:
-            raise TypeError(f"tool {self.name!r}: {e}") from None
+            raise ToolArgsError(f"tool {self.name!r}: {e}") from None
         for name, value in bound.arguments.items():
             expected = self._signature.parameters[name].annotation
             if not _matches(value, expected):
-                raise TypeError(f"tool {self.name!r}: {name!r} must be {expected.__name__}, got {type(value).__name__}")
+                raise ToolArgsError(f"tool {self.name!r}: {name!r} must be {expected.__name__}, got {type(value).__name__}")
         return str(self._fn(**args))
 
 
@@ -69,7 +75,7 @@ class ToolRegistry:
 
     def get(self, name: str) -> Tool:
         if name not in self._tools:
-            raise KeyError(f"no tool named {name!r}; available: {sorted(self._tools)}")
+            raise ToolArgsError(f"no tool named {name!r}; available: {sorted(self._tools)}")
         return self._tools[name]
 
     @property
