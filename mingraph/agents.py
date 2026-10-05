@@ -1,6 +1,9 @@
+import json
 import logging
 import warnings
 from collections.abc import Sequence as Seq
+from datetime import datetime
+from os import PathLike
 
 from mingraph.llm import BaseLLM, LLMResponse
 from mingraph.memory import KeepAll, Memory
@@ -64,6 +67,47 @@ class ConsoleLogger(Observer):
 
     def on_finish(self, answer: str | None, reason: str) -> None:
         print(f"[finish: {reason}] {answer if answer is not None else ''}".rstrip())
+
+
+class TraceRecorder(Observer):
+    """Appends every announcement to a file, one JSON object per line, so a run can be read after it ends.
+    The file is opened and closed for each line, so a run that crashes keeps everything written before it.
+    """
+    def __init__(self, path: str | PathLike):
+        self._path = path
+        self._run = 0
+        self._step = 0
+
+    def on_step_start(self, step: int) -> None:
+        if step == 1:
+            self._run += 1
+        self._step = step
+        self._write("step_start")
+
+    def on_model_reply(self, response: LLMResponse) -> None:
+        self._write("model_reply", content=response.message.content,
+                    tool_calls=[{"name": c.name, "args": dict(c.args), "id": c.id} for c in response.message.tool_calls],
+                    reasoning=response.reasoning, input_tokens=response.input_tokens,
+                    output_tokens=response.output_tokens, reasoning_tokens=response.reasoning_tokens,
+                    stop_reason=response.stop_reason)
+
+    def on_tool_call(self, call: ToolCall) -> None:
+        self._write("tool_call", name=call.name, args=dict(call.args), id=call.id)
+
+    def on_tool_return(self, result: ToolMessage) -> None:
+        self._write("tool_return", content=result.content, tool_call_id=result.tool_call_id)
+
+    def on_tool_error(self, call: ToolCall, error: Exception) -> None:
+        self._write("tool_error", name=call.name, id=call.id, error=f"{type(error).__name__}: {error}")
+
+    def on_finish(self, answer: str | None, reason: str) -> None:
+        self._write("finish", answer=answer, reason=reason)
+
+    def _write(self, event: str, **fields) -> None:
+        line = {"time": datetime.now().isoformat(timespec="seconds"), "run": self._run, "step": self._step,
+                "event": event, **fields}
+        with open(self._path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(line, ensure_ascii=False) + "\n")
 
 
 def _count(n: int | None) -> str:
