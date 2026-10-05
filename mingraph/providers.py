@@ -13,18 +13,24 @@ from mingraph.tools import Tool
 
 
 class OpenAILLM(BaseLLM):
-    """OpenAI adapter for BaseLLM, backed by the Chat Completions API."""
+    """OpenAI adapter for BaseLLM, backed by the Chat Completions API.
+    reasoning_effort is OpenAI's own setting ("minimal" to "high"); None leaves the model's default.
+    Chat Completions reports how many tokens went to reasoning, never the reasoning text.
+    """
 
     _STOP_REASONS = {"stop": "stop", "length": "length", "tool_calls": "tool_call"}
 
-    def __init__(self, model: str, api_key: str | None = None):
+    def __init__(self, model: str, api_key: str | None = None, reasoning_effort: str | None = None):
         self._client = OpenAI(api_key=api_key)
         self._model = model
+        self._reasoning_effort = reasoning_effort
 
     def generate(self, messages: list[Message], tools: Sequence[Tool] = ()) -> LLMResponse:
         request = {"model": self._model, "messages": [_openai_message(m) for m in messages]}
         if tools:
             request["tools"] = [_function_tool(t) for t in tools]
+        if self._reasoning_effort is not None:
+            request["reasoning_effort"] = self._reasoning_effort
         response = self._client.chat.completions.create(**request)
         choice = response.choices[0]
         usage = response.usage
@@ -38,22 +44,30 @@ class OpenAILLM(BaseLLM):
             input_tokens=usage.prompt_tokens if usage else None,
             output_tokens=usage.completion_tokens if usage else None,
             stop_reason=self._STOP_REASONS.get(choice.finish_reason, "other"),
+            reasoning_tokens=usage.completion_tokens_details.reasoning_tokens
+            if usage and usage.completion_tokens_details else None,
         )
 
 
 class OllamaLLM(BaseLLM):
-    """Local-model adapter for BaseLLM, backed by a running Ollama server."""
+    """Local-model adapter for BaseLLM, backed by a running Ollama server.
+    think is Ollama's own setting (True, False, or a level like "high"); None leaves the model's default.
+    Ollama returns the thinking text but no separate count for it.
+    """
 
     _STOP_REASONS = {"stop": "stop", "length": "length"}
 
-    def __init__(self, model: str, host: str = "http://localhost:11434"):
+    def __init__(self, model: str, host: str = "http://localhost:11434", think: bool | str | None = None):
         self._client = OllamaClient(host=host)
         self._model = model
+        self._think = think
 
     def generate(self, messages: list[Message], tools: Sequence[Tool] = ()) -> LLMResponse:
         request = {"model": self._model, "messages": _ollama_messages(messages)}
         if tools:
             request["tools"] = [_function_tool(t) for t in tools]
+        if self._think is not None:
+            request["think"] = self._think
         response = self._client.chat(**request)
         # Ollama's tool calls carry no id, so we stamp one; it must be unique across the conversation.
         tool_calls = [
@@ -67,6 +81,7 @@ class OllamaLLM(BaseLLM):
             input_tokens=response.prompt_eval_count,
             output_tokens=response.eval_count,
             stop_reason=stop_reason,
+            reasoning=response.message.thinking or None,
         )
 
 
