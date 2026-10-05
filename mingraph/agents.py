@@ -38,6 +38,38 @@ class Observer:
         """Once per run: reason is "answered", or "step limit" with no answer."""
 
 
+class ConsoleLogger(Observer):
+    """Prints every announcement as it happens, thinking and token counts included. A count shows ? when
+    the provider didn't report it.
+    """
+    def on_step_start(self, step: int) -> None:
+        print(f"[step {step}]")
+
+    def on_model_reply(self, response: LLMResponse) -> None:
+        if response.reasoning:
+            print(f"  thinking: {response.reasoning}")
+        message = response.message
+        said = f"(asks for {', '.join(c.name for c in message.tool_calls)})" if message.tool_calls else repr(message.content)
+        print(f"  reply: {said}   tokens in={_count(response.input_tokens)} out={_count(response.output_tokens)}"
+              f" thinking={_count(response.reasoning_tokens)}")
+
+    def on_tool_call(self, call: ToolCall) -> None:
+        print(f"  call {call.name} {dict(call.args)}")
+
+    def on_tool_return(self, result: ToolMessage) -> None:
+        print(f"  returned: {result.content}")
+
+    def on_tool_error(self, call: ToolCall, error: Exception) -> None:
+        print(f"  failed {call.name}: {type(error).__name__}: {error}")
+
+    def on_finish(self, answer: str | None, reason: str) -> None:
+        print(f"[finish: {reason}] {answer if answer is not None else ''}".rstrip())
+
+
+def _count(n: int | None) -> str:
+    return "?" if n is None else str(n)
+
+
 class Agent(Step):
     """Calls the model, runs the tools it asks for, feeds the answers back, and repeats until it answers.
     Reads a question from one slot and writes the final answer's text to another, so it fits anywhere a step does.
