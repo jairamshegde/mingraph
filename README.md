@@ -6,132 +6,74 @@ object-oriented design and design patterns in Python.
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## Inspiration
-
 > *What I cannot create, I do not understand.* (Richard Feynman)
 
-mingraph follows the idea behind
-[build-your-own-x](https://github.com/codecrafters-io/build-your-own-x): the
-best way to understand a technology is to rebuild it from scratch. Here the
-goal is object-oriented design. Instead of studying patterns in isolation,
-each one is learned by rebuilding a LangChain/LangGraph piece that actually
-needs it, so every concept comes with a real problem it solves.
-
-## About
-
-mingraph is a learning project, not a library. Each phase takes one piece of
-the LangChain/LangGraph stack (provider wrappers, messages, tools, memory,
-steps, retrievers, the agent loop), rebuilds a minimal version of it, and uses
-it to practise one object-oriented idea or design pattern. The roadmap ends
-with a capstone: a tiny multi-agent graph orchestrator.
-
-Design choices are checked against the official LangChain, LangGraph and
-provider documentation. The reasoning behind each phase, including what went
-wrong, is written up in the blog series below.
-
-**What it isn't:** a replacement for LangChain or LangGraph, or
-production-ready code. The goal is to understand why those frameworks are
-shaped the way they are.
+Each phase rebuilds one piece of the LangChain/LangGraph stack and uses it to
+learn one OOP idea or pattern. It's a learning project in the spirit of
+[build-your-own-x](https://github.com/codecrafters-io/build-your-own-x), not a
+library and not production code.
 
 ## Learning series
 
-### LangGraph from Scratch: Design Patterns in Python
-
 One post per phase on
-[The Architect's Mind](https://jairamshegde.github.io/thearchitectsmind/), covering what
-was built, the design decisions behind it, and what went wrong along the way.
+[The Architect's Mind](https://jairamshegde.github.io/thearchitectsmind/).
+The blog is moving off Hashnode with the same name. Phases 0 and 1 have moved,
+and the rest follow.
 
-> **Note:** The blog is moving from Hashnode to a new address. The name, The
-> Architect's Mind, stays the same. Phases 0 and 1 are already on the new site.
-> The other posts still link to Hashnode until they move.
-
-| # | Phase | OOP concept / pattern | Code | Blog post | Status |
-|---|-------|-----------------------|------|-----------|--------|
-| 0 | Why OOP clicked | Design problem first, OOP second | — | [Learning OOP through the design questions I already ask at work](https://jairamshegde.github.io/thearchitectsmind/writing/phase-0-oop-finally-clicked/) | Done |
-| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and polymorphism, built from three LLM adapters](https://jairamshegde.github.io/thearchitectsmind/writing/phase-1-abstraction-and-polymorphism/) | Done |
-| 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | [What Encapsulation Actually Buys You](https://thearchitectsmind.hashnode.dev/what-encapsulation-actually-buys-you) | Done |
-| 3 | Tools & function calling | Strategy pattern, tool registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern Never Clicked for Me Until a Model Started Calling My Functions](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) | Done |
-| 4 | Memory | Polymorphism, Template Method | [`phase-4`](https://github.com/jairamshegde/mingraph/tree/phase-4) | [Template Method, and Why Your LLM's Memory Isn't Its Chat History](https://thearchitectsmind.hashnode.dev/template-method-and-why-your-llm-s-memory-isn-t-its-chat-history) | Done |
-| 5 | Steps | Composite pattern | [`phase-5`](https://github.com/jairamshegde/mingraph/tree/phase-5) | [The Composite Pattern in a Python LLM Pipeline](https://thearchitectsmind.hashnode.dev/the-composite-pattern-in-a-python-llm-pipeline) | Done |
-| 6 | RAG retrievers | Dependency injection, interface segregation | [`phase-6`](https://github.com/jairamshegde/mingraph/tree/phase-6) | [Dependency Injection and Interface Segregation in a Python RAG Retriever](https://thearchitectsmind.hashnode.dev/dependency-injection-and-interface-segregation-in-a-python-rag-retriever) | Done |
-| 7 | Agent loop | State, Observer (streaming and callbacks) | [`phase-7`](https://github.com/jairamshegde/mingraph/tree/phase-7) | [The State and Observer Patterns in a Python Agent Loop](https://thearchitectsmind.hashnode.dev/the-state-and-observer-patterns-in-a-python-agent-loop) | Done |
-| ★ | Capstone | A mini multi-agent graph orchestrator | — | Coming soon | In progress |
+| # | Phase | OOP idea | Code | Post |
+|---|-------|----------|------|------|
+| 0 | Why OOP clicked | Design problem first | | [Learning OOP through the design questions I already ask at work](https://jairamshegde.github.io/thearchitectsmind/writing/phase-0-oop-finally-clicked/) |
+| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and polymorphism, built from three LLM adapters](https://jairamshegde.github.io/thearchitectsmind/writing/phase-1-abstraction-and-polymorphism/) |
+| 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | [What Encapsulation Actually Buys You](https://thearchitectsmind.hashnode.dev/what-encapsulation-actually-buys-you) |
+| 3 | Tools | Strategy, registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) |
+| 4 | Memory | Template Method | [`phase-4`](https://github.com/jairamshegde/mingraph/tree/phase-4) | [Template Method, and Why Your LLM's Memory Isn't Its Chat History](https://thearchitectsmind.hashnode.dev/template-method-and-why-your-llm-s-memory-isn-t-its-chat-history) |
+| 5 | Steps | Composite | [`phase-5`](https://github.com/jairamshegde/mingraph/tree/phase-5) | [The Composite Pattern in a Python LLM Pipeline](https://thearchitectsmind.hashnode.dev/the-composite-pattern-in-a-python-llm-pipeline) |
+| 6 | RAG retrievers | Dependency injection, interface segregation | [`phase-6`](https://github.com/jairamshegde/mingraph/tree/phase-6) | [Dependency Injection and Interface Segregation in a Python RAG Retriever](https://thearchitectsmind.hashnode.dev/dependency-injection-and-interface-segregation-in-a-python-rag-retriever) |
+| 7 | Agent loop | State, Observer | [`phase-7`](https://github.com/jairamshegde/mingraph/tree/phase-7) | [The State and Observer Patterns in a Python Agent Loop](https://thearchitectsmind.hashnode.dev/the-state-and-observer-patterns-in-a-python-agent-loop) |
+| ★ | Capstone | Mini multi-agent graph orchestrator | | In progress |
 
 ## Project structure
 
 ```
 mingraph/
 ├── mingraph/
-│   ├── __init__.py
-│   ├── agents.py       # Agent loop, its State cards, and the Observer, ConsoleLogger and TraceRecorder listeners
-│   ├── llm.py          # BaseLLM contract and the LLMResponse it returns
-│   ├── memory.py       # Memory base and the KeepAll, LastN and Summarise strategies
-│   ├── messages.py     # Sealed message types, one per kind of line, and ToolCall
-│   ├── prompts.py      # ChatPromptTemplate and MessagesPlaceholder
-│   ├── providers.py    # OpenAI, Anthropic and Ollama adapters, and the Ollama embedder
-│   ├── retrievers.py   # Document, Embeddings, VectorStore, Retriever and split_text
-│   ├── steps.py        # Step, the Sequence/Branch/Parallel containers, wrapper steps, Retrieve and Retry
-│   └── tools.py        # Tool, read off a function, and ToolRegistry
-├── requirements.txt    # pinned provider SDKs
-├── LICENSE
-└── README.md
+│   ├── agents.py       # Agent loop, State cards, observers
+│   ├── llm.py          # BaseLLM contract, LLMResponse
+│   ├── memory.py       # Memory base; KeepAll, LastN, Summarise
+│   ├── messages.py     # one sealed type per message kind, ToolCall
+│   ├── prompts.py      # ChatPromptTemplate, MessagesPlaceholder
+│   ├── providers.py    # OpenAI, Anthropic, Ollama adapters; Ollama embedder
+│   ├── retrievers.py   # Document, Embeddings, VectorStore, Retriever, split_text
+│   ├── steps.py        # Step; Sequence, Branch, Parallel; Retrieve, Retry
+│   └── tools.py        # Tool, ToolRegistry
+└── requirements.txt    # pinned provider SDKs
 ```
 
 ## Getting started
 
-### Prerequisites
-
-- Python 3.10 or newer (developed on 3.12)
-- An OpenAI and/or Anthropic API key, for the hosted providers
-- [Ollama](https://ollama.com/download) running locally, for the local provider
-
-### Installation
+You need Python 3.10+, plus an OpenAI or Anthropic key, or
+[Ollama](https://ollama.com/download) running locally.
 
 ```bash
 git clone https://github.com/jairamshegde/mingraph.git
 cd mingraph
-python -m venv .venv
-source .venv/bin/activate
+python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-```
 
-The project isn't packaged yet, so run code from the repository root so that
-`import mingraph` resolves.
-
-### Configuration
-
-The OpenAI and Anthropic SDKs read their keys from the environment:
-
-```bash
-export OPENAI_API_KEY="..."
+export OPENAI_API_KEY="..."        # or pass api_key= to the provider
 export ANTHROPIC_API_KEY="..."
+ollama pull qwen3.5                # any Ollama chat model works
+ollama pull qwen3-embedding:0.6b   # only for the RAG example
 ```
 
-You can also pass `api_key=` to the provider's constructor. Ollama needs no
-key: `OllamaLLM` connects to `http://localhost:11434` unless you pass `host=`.
-Pull a model before first use:
-
-```bash
-ollama pull qwen3.5
-```
-
-Any chat model from the [Ollama library](https://ollama.com/library) works,
-for example `qwen3` or a Gemma model such as `gemma3` or `gemma4`. The
-retrieval example also needs an embedding model:
-
-```bash
-ollama pull qwen3-embedding:0.6b
-```
+Run code from the repo root. The project isn't packaged yet.
 
 ## Usage
 
 ### Agent loop
 
-An `Agent` calls the model, runs the tools it asks for, sends the results
-back, and repeats until the model replies without asking for a tool. The model
-decides how many rounds that takes; `max_steps` (10 by default) is the ceiling.
-Listeners passed as `observers` hear every step as it happens, and the agent
-runs the same with or without them:
+The agent calls the model, runs the tools it asks for, and repeats until the
+model answers without a tool call.
 
 ```python
 from mingraph.agents import Agent, ConsoleLogger, Observer, TraceRecorder
@@ -176,34 +118,21 @@ print(state["answer"])    # e.g. Paris: 64°F, Tokyo: 75°F
 print(counter.calls)      # e.g. 4: two lookups, two conversions
 ```
 
-`ConsoleLogger` prints each step, including the model's thinking and token
-counts when the provider reports them. `TraceRecorder` appends one JSON line
-per step to a file, so a run that went wrong can be read afterwards. An
-observer that raises is skipped with a logged warning and never stops the run.
-
-The agent is a `Step`: it reads `question` and writes `answer`, so it fits
-anywhere a step does, including inside a `Sequence`. It keeps the conversation
-in a `KeepAll` memory unless you pass `memory=`, and the conversation carries
-over to the next `run`. If the model calls a tool with arguments that don't
-fit, or a tool that doesn't exist, the error goes back to the model so it can
-correct the call. Any other tool failure stops the run. Running out of
-`max_steps` raises `StepLimitReached` instead of returning a made-up answer.
-Thinking is switched on per provider (`think=` for Ollama, `reasoning_effort=`
-for OpenAI) and comes back on `LLMResponse.reasoning` and
-`LLMResponse.reasoning_tokens`.
+- `max_steps` (default 10) caps the loop. Hitting it raises `StepLimitReached`.
+- `ConsoleLogger` prints each step. `TraceRecorder` writes one JSON line per step.
+- A failing observer is skipped with a warning and never stops the run.
+- Bad tool arguments or unknown tools go back to the model to fix. Other tool errors stop the run.
+- The agent is a `Step` (reads `question`, writes `answer`), and it keeps a `KeepAll` memory unless you pass `memory=`.
+- Thinking is `think=` for Ollama and `reasoning_effort=` for OpenAI. It comes back on `LLMResponse.reasoning`.
 
 ### Earlier phases
 
-Each earlier example builds on the ones before it (imports, `llm`, `registry`,
-`template` and `run` carry over), so open them in order.
+Open these in order. Each one reuses imports and names from the ones before it.
 
 <details>
-<summary><strong>Chat with history (phases 1–2)</strong></summary>
+<summary><strong>Chat with history (phases 1 and 2)</strong></summary>
 
-A prompt template turns variables plus the conversation so far into a list of
-messages. `generate` sends that list and returns the assistant's reply with
-metadata about the call. Calling code depends only on `BaseLLM`, so switching
-providers is a one-line change:
+Calling code depends only on `BaseLLM`, so switching providers is a one-line change.
 
 ```python
 from mingraph.llm import BaseLLM
@@ -231,20 +160,16 @@ llm = OllamaLLM("qwen3.5")  # or OpenAILLM("gpt-5-mini"), AnthropicLLM("claude-s
 chat(llm, ["Hi, I'm Jai.", "What's my name?"])
 ```
 
-The second answer can only come from the history. Filling a template fails
-loudly on a missing or unknown variable, and the first turn passes `history=[]`
-explicitly. With a thinking model such as `qwen3.5`, `output_tokens` includes
-the model's hidden reasoning, so it can be far larger than the visible reply.
+- The second answer can only come from the history.
+- A missing or unknown template variable raises an error.
+- With a thinking model, `output_tokens` includes hidden reasoning.
 
 </details>
 
 <details>
 <summary><strong>Tool calling (phase 3)</strong></summary>
 
-`@Tool` turns a plain function into a tool. Its name, description and argument
-schema are read off the function's name, docstring and type hints. A
-`ToolRegistry` holds the tools, refuses two with the same name, and runs the
-call the model asks for:
+`@Tool` reads a tool's name, description and schema off the function. `ToolRegistry` refuses duplicate names and runs the calls.
 
 ```python
 from mingraph.tools import Tool, ToolRegistry
@@ -287,24 +212,16 @@ print(ask(llm, "What's the weather in Paris right now?"))
 print(ask(llm, "What is 1234 + 5678?"))
 ```
 
-The calling code never names a tool, so adding one is a new `@Tool` function
-and one `registry.add` line. Tool arguments from the model are checked against
-the function's signature before it runs. Tool calling works with OpenAI and
-Ollama; `AnthropicLLM` raises `NotImplementedError` when given tools. The
-example runs one round of tool calls; `Agent` (above) loops until the model
-stops asking.
+- Adding a tool means one `@Tool` function and one `registry.add` line.
+- Arguments are checked against the function signature before it runs.
+- Works with OpenAI and Ollama. `AnthropicLLM` raises `NotImplementedError` for tools.
 
 </details>
 
 <details>
 <summary><strong>Memory (phase 4)</strong></summary>
 
-A `Memory` keeps the whole conversation and builds the list to send on each
-call. The record only grows; a strategy decides how much of it the model sees.
-`KeepAll` sends everything, `LastN` sends the last few turns, and `Summarise`
-sends an LLM-written recap of older turns plus the recent ones. A turn is a
-user message and everything after it up to the next one, so a tool call is
-never separated from its result:
+`Memory` keeps the whole conversation. A strategy picks what the model sees: `KeepAll` sends everything, `LastN` sends the last turns, and `Summarise` sends a recap plus recent turns.
 
 ```python
 from mingraph.memory import KeepAll, LastN, Memory, Summarise
@@ -328,24 +245,16 @@ chat(llm, LastN(1, system=system), questions)
 chat(llm, Summarise(llm, keep=1, trigger=2, system=system), questions)
 ```
 
-The calling code is the same for all three. `KeepAll` answers the last
-question from the full history, `LastN(1)` can't answer it, and `Summarise`
-answers from its recap for fewer input tokens. The system message is given
-once, to the constructor, and always comes first. The recap is sent as a user
-message and never stored in the conversation.
+- `KeepAll` answers the last question. `LastN(1)` can't. `Summarise` can, with fewer input tokens.
+- Trimming works by turns, so a tool call never loses its result.
+- The system message goes to the constructor and always comes first.
 
 </details>
 
 <details>
 <summary><strong>Steps (phase 5)</strong></summary>
 
-Every step has one method, `run(state)`. It reads what it needs from a shared
-state dict and returns a dict of only the keys it set. The containers are
-steps too: `Sequence` runs steps in order, `Branch` runs one step picked from
-the state, and `Parallel` runs steps on the same state and merges their
-results. So a whole pipeline fits anywhere a single step fits. `Prompt`,
-`CallModel`, `Text` and `RunTools` wrap the template, the model and the tool
-registry, and `Retry` wraps any one step:
+Every step has one method, `run(state)`, and returns only the keys it set. Containers are steps too, so a whole pipeline fits wherever one step does.
 
 ```python
 from mingraph.steps import Branch, CallModel, Parallel, Prompt, Retry, RunTools, Sequence, State, Step, Text
@@ -386,27 +295,17 @@ print(state["tagline"].content)                                # e.g. Family wee
 print([result.content for result in state["tool_results"]])    # ['It is 18°C and cloudy in Pune.']
 ```
 
-The imports and `registry` come from the examples above. `run` never checks what it was given. `run(weather, {"city": "Pune"})` works
-the same way as `run(trip, ...)`, as would a single `CallModel`. `Text` is
-there because `CallModel` stores the reply message, and a template would print
-the whole message object instead of its text. `Parallel` raises a `ValueError`
-if two of its steps set the same key, which is why the two pipelines use
-different slot names. `Retry` tries a failing step up to three times, waiting
-longer each time, and wrapping only the step that can fail keeps the steps
-before it from running twice. The steps inside `Parallel` run one after
-another, not at the same time.
+- `Sequence` runs in order, `Branch` picks one step, `Parallel` merges results.
+- `Parallel` raises `ValueError` if two steps set the same key. Its steps run one after another.
+- `Retry` retries one step up to three times with growing waits.
+- `Text` pulls the text out of a reply message so a template can use it.
 
 </details>
 
 <details>
 <summary><strong>Retrieval, RAG (phase 6)</strong></summary>
 
-Retrieval finds the documents that match a question and puts them in the
-prompt. Three small interfaces split the job. An `Embeddings` model turns text
-into a vector, so texts with similar meaning land close together. A
-`VectorStore` keeps documents with their vectors and finds the ones nearest a
-query. A `Retriever` only returns documents for a query. The store is handed
-its embedder, and the `Retrieve` step is handed a retriever, never the store:
+An `Embeddings` model turns text into vectors, a `VectorStore` finds the nearest documents, and a `Retriever` returns them for a query.
 
 ```python
 from mingraph.providers import OllamaEmbedder
@@ -433,42 +332,28 @@ print(state["reply"].content)                          # 3 whistles.
 print([doc.metadata["source"] for doc in state["docs"]])
 ```
 
-`llm`, `template`, `run` and the step imports come from the examples above.
-Swapping the embedder touches only the line that builds the store: a test can
-hand it a fake `Embeddings` that returns vectors picked by hand, so the
-retrieval order is known in advance. One embedder makes every vector in a
-store, cards and questions alike. The store ranks by cosine similarity and
-checks every document on each search. `OllamaEmbedder` takes a `query_prefix`
-for models that want an instruction in front of questions, and
-`split_text(text, chunk_size, chunk_overlap)` cuts a long file into pieces to
-add as documents. The splitter cuts every `chunk_size` characters without
-reading the text, so a piece can lose the words that say what it's about.
+- The store is handed its embedder, so a test can pass a fake one.
+- One embedder makes every vector in a store. Search ranks by cosine similarity.
+- `split_text` cuts long text into fixed-size chunks, which can split a topic in half.
 
 </details>
 
 ## References
 
-- [LangChain documentation](https://docs.langchain.com/oss/python/langchain/overview)
-- [LangGraph documentation](https://docs.langchain.com/oss/python/langgraph/overview)
-- [Python `abc` module](https://docs.python.org/3/library/abc.html)
-- [Python `dataclasses` module](https://docs.python.org/3/library/dataclasses.html)
-- [LangChain `ChatPromptTemplate` reference](https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate)
-- [LangChain tools](https://docs.langchain.com/oss/python/langchain/tools)
-- [LangChain `Runnable` reference](https://reference.langchain.com/python/langchain-core/runnables/base/Runnable)
-- [LangGraph Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
-- [LangChain retrieval](https://docs.langchain.com/oss/python/langchain/retrieval)
-- [LangChain vector stores](https://docs.langchain.com/oss/python/integrations/vectorstores)
-- [LangChain agents](https://docs.langchain.com/oss/python/langchain/agents)
-- [LangChain streaming](https://docs.langchain.com/oss/python/langchain/streaming)
-- [LangChain observability](https://docs.langchain.com/oss/python/langchain/observability)
-- [LangChain short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory)
-- [OpenAI cookbook: session memory](https://developers.openai.com/cookbook/examples/agents_sdk/session_memory)
-- [Python `inspect` module](https://docs.python.org/3/library/inspect.html)
+- [LangChain docs](https://docs.langchain.com/oss/python/langchain/overview) and [LangGraph docs](https://docs.langchain.com/oss/python/langgraph/overview)
+- Python: [`abc`](https://docs.python.org/3/library/abc.html), [`dataclasses`](https://docs.python.org/3/library/dataclasses.html), [`inspect`](https://docs.python.org/3/library/inspect.html)
 - [Refactoring.Guru: design patterns](https://refactoring.guru/design-patterns)
-- Provider SDKs: [openai-python](https://github.com/openai/openai-python),
-  [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python),
-  [ollama-python](https://github.com/ollama/ollama-python)
+- Provider SDKs: [openai-python](https://github.com/openai/openai-python), [anthropic-sdk-python](https://github.com/anthropics/anthropic-sdk-python), [ollama-python](https://github.com/ollama/ollama-python)
+
+<details>
+<summary>More LangChain pages used per phase</summary>
+
+- [`ChatPromptTemplate`](https://reference.langchain.com/python/langchain-core/prompts/chat/ChatPromptTemplate), [tools](https://docs.langchain.com/oss/python/langchain/tools), [`Runnable`](https://reference.langchain.com/python/langchain-core/runnables/base/Runnable), [Graph API](https://docs.langchain.com/oss/python/langgraph/graph-api)
+- [Retrieval](https://docs.langchain.com/oss/python/langchain/retrieval), [vector stores](https://docs.langchain.com/oss/python/integrations/vectorstores), [agents](https://docs.langchain.com/oss/python/langchain/agents), [streaming](https://docs.langchain.com/oss/python/langchain/streaming)
+- [Observability](https://docs.langchain.com/oss/python/langchain/observability), [short-term memory](https://docs.langchain.com/oss/python/langchain/short-term-memory), [OpenAI cookbook: session memory](https://developers.openai.com/cookbook/examples/agents_sdk/session_memory)
+
+</details>
 
 ## License
 
-Released under the [MIT License](LICENSE).
+[MIT](LICENSE)
