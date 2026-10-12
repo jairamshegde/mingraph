@@ -38,12 +38,17 @@ shaped the way they are.
 ### LangGraph from Scratch: Design Patterns in Python
 
 One post per phase on
-[The Architect's Mind](https://thearchitectsmind.hashnode.dev/), covering what
+[The Architect's Mind](https://jairamshegde.github.io/thearchitectsmind/), covering what
 was built, the design decisions behind it, and what went wrong along the way.
+
+> **Note:** The blog is moving from Hashnode to a new address. The name, The
+> Architect's Mind, stays the same. Phases 0 and 1 are already on the new site.
+> The other posts still link to Hashnode until they move.
 
 | # | Phase | OOP concept / pattern | Code | Blog post | Status |
 |---|-------|-----------------------|------|-----------|--------|
-| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and Polymorphism Never Clicked for Me Until I Wrapped Three LLM APIs](https://thearchitectsmind.hashnode.dev/abstraction-and-polymorphism-never-clicked-for-me-until-i-wrapped-three-llm-apis) | Done |
+| 0 | Why OOP clicked | Design problem first, OOP second | — | [Learning OOP through the design questions I already ask at work](https://jairamshegde.github.io/thearchitectsmind/writing/phase-0-oop-finally-clicked/) | Done |
+| 1 | Provider wrapper | Abstraction, polymorphism | [`phase-1`](https://github.com/jairamshegde/mingraph/tree/phase-1) | [Abstraction and polymorphism, built from three LLM adapters](https://jairamshegde.github.io/thearchitectsmind/writing/phase-1-abstraction-and-polymorphism/) | Done |
 | 2 | Messages & prompts | Encapsulation, composition, dataclasses | [`phase-2`](https://github.com/jairamshegde/mingraph/tree/phase-2) | [What Encapsulation Actually Buys You](https://thearchitectsmind.hashnode.dev/what-encapsulation-actually-buys-you) | Done |
 | 3 | Tools & function calling | Strategy pattern, tool registry | [`phase-3`](https://github.com/jairamshegde/mingraph/tree/phase-3) | [Strategy and the Registry Pattern Never Clicked for Me Until a Model Started Calling My Functions](https://thearchitectsmind.hashnode.dev/strategy-and-the-registry-pattern) | Done |
 | 4 | Memory | Polymorphism, Template Method | [`phase-4`](https://github.com/jairamshegde/mingraph/tree/phase-4) | [Template Method, and Why Your LLM's Memory Isn't Its Chat History](https://thearchitectsmind.hashnode.dev/template-method-and-why-your-llm-s-memory-isn-t-its-chat-history) | Done |
